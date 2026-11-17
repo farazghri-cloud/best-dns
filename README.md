@@ -21,8 +21,19 @@
 ## نصب با یک دستور (Ubuntu 22.04/24.04، Debian 12)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/farazghri-cloud/best-dns/main/install.sh | sudo bash
+curl -fsSL https://cdn.jsdelivr.net/gh/farazghri-cloud/best-dns@main/install.sh | sudo bash
 ```
+
+> چرا jsDelivr؟ چون در ایران `raw.githubusercontent.com` معمولاً فیلتر است و jsDelivr از CDNهای در دسترس می‌خواند. دو مسیر جایگزین هم وجود دارد:
+>
+> ```bash
+> # مسیر دوم: API گیت‌هاب
+> curl -fsSL -H "Accept: application/vnd.github.raw" \
+>   https://api.github.com/repos/farazghri-cloud/best-dns/contents/install.sh | sudo bash
+>
+> # مسیر سوم: کلون و اجرا
+> git clone https://github.com/farazghri-cloud/best-dns.git && cd best-dns && sudo ./install.sh
+> ```
 
 اسکریپت به‌صورت خودکار:
 
@@ -31,6 +42,8 @@ curl -fsSL https://raw.githubusercontent.com/farazghri-cloud/best-dns/main/insta
 - پورت‌های ۵۳ (UDP/TCP)، پورت پنل و پورت‌های رله را در ufw باز می‌کند
 - کرنل را برای بار DNS تنظیم می‌کند (`sysctl`)
 - یک رمز عبور تصادفی می‌سازد و آدرس پنل را چاپ می‌کند
+
+> **پورت ۴۴۳ باید آزاد باشد.** اگر روی سرور وب‌سرور دارید (Nginx/Caddy روی ۴۴۳)، یا آن را خاموش کنید یا پورت رله را عوض کنید: `--panel-port` برای پنل و `BESTDNS_PROXY_PORTS=8443` برای رله. کلاینت‌ها فقط باید DNS را عوض کنند؛ رله روی هر پورتی که باز باشد کار می‌کند چون پاسخ DNS به همان IP سرور اشاره می‌کند.
 
 گزینه‌ها (هم به‌صورت متغیر محیطی، هم به‌صورت فلگ):
 
