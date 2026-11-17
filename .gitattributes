@@ -1,0 +1,19 @@
+# Shell scripts must stay LF even on Windows checkouts, otherwise
+# `curl … | bash` breaks with "bad interpreter".
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.go            text eol=lf
+*.js            text eol=lf
+*.css           text eol=lf
+*.html          text eol=lf
+*.md            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+Makefile        text eol=lf
+*.bat           text eol=crlf
+*.ps1           text eol=crlf
+
+# release artifacts
+dist/*          binary
+*.exe           binary
+*.png           binary
