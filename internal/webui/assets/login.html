@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ورود — __TITLE__</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body class="auth-body">
+  <div class="auth-glow"></div>
+  <main class="auth-card">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <h1>__TITLE__</h1>
+    </div>
+    <p class="muted small">پنل مدیریت DNS هوشمند و رله SNI</p>
+    <form id="login-form" autocomplete="off">
+      <label class="field">
+        <span>رمز عبور</span>
+        <input id="password" type="password" name="password" required autofocus placeholder="••••••••">
+      </label>
+      <button class="btn primary block" type="submit" id="submit">ورود به پنل</button>
+      <p class="error" id="error" hidden></p>
+    </form>
+    <p class="muted tiny center">رمز اولیه در فایل <code>first-login.txt</code> روی سرور ذخیره شده است.</p>
+  </main>
+<script>
+const form = document.getElementById('login-form');
+const err = document.getElementById('error');
+const btn = document.getElementById('submit');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  err.hidden = true;
+  btn.disabled = true;
+  btn.textContent = 'در حال بررسی…';
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Requested-With': 'bestdns'},
+      body: JSON.stringify({password: document.getElementById('password').value})
+    });
+    if (res.ok) { window.location.href = '/dash'; return; }
+    const body = await res.json().catch(() => ({}));
+    err.textContent = body.error || 'رمز عبور اشتباه است.';
+    err.hidden = false;
+  } catch (e) {
+    err.textContent = 'ارتباط با سرور برقرار نشد.';
+    err.hidden = false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'ورود به پنل';
+  }
+});
+</script>
+</body>
+</html>

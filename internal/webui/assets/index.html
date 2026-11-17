@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__ · پنل</title>
+<link rel="stylesheet" href="/static/app.css">
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <div>
+        <h1>__TITLE__</h1>
+        <p class="tiny muted">Smart DNS · SNI Relay</p>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <button class="nav-item active" data-view="dashboard">
+        <span class="ico">◈</span> داشبورد
+      </button>
+      <button class="nav-item" data-view="routes">
+        <span class="ico">⌁</span> مسیرها <span class="pill count" id="nav-routes-count">۰</span>
+      </button>
+      <button class="nav-item" data-view="clients">
+        <span class="ico">◉</span> کلاینت‌ها <span class="pill count" id="nav-clients-count">۰</span>
+      </button>
+      <button class="nav-item" data-view="settings">
+        <span class="ico">⚙</span> تنظیمات
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <div class="server-ip"><span class="tiny muted">آدرس DNS سرور</span><strong id="side-dns-ip">—</strong></div>
+      <div class="row gap-sm">
+        <span class="status-dot" id="side-status"></span>
+        <span class="tiny muted" id="side-uptime">در حال اتصال…</span>
+      </div>
+      <button class="btn ghost tiny block" id="logout">خروج از پنل</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h2 id="view-title">داشبورد</h2>
+        <p class="tiny muted" id="view-sub">نمای زندهٔ ترافیک و وضعیت سرویس</p>
+      </div>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </header>
+
+    <div class="content">
+      <!-- ── dashboard ─────────────────────────────────────────── -->
+      <section class="view active" id="view-dashboard">
+        <div class="stat-grid">
+          <div class="card stat">
+            <span class="stat-label">کل کوئری‌ها</span>
+            <strong class="stat-value" id="st-total">۰</strong>
+            <span class="stat-hint" id="st-qps">۰ QPS</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">از مسیرها عبور کرده</span>
+            <strong class="stat-value accent" id="st-routed">۰</strong>
+            <span class="stat-hint" id="st-routed-pct">۰٪</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">پاسخ از کش</span>
+            <strong class="stat-value violet" id="st-cached">۰</strong>
+            <span class="stat-hint">بدون رفت‌وبرگشت به بالا دست</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">رد شده</span>
+            <strong class="stat-value danger" id="st-refused">۰</strong>
+            <span class="stat-hint">کلاینت ثبت‌نشده یا منقضی</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">اتصال فعال رله</span>
+            <strong class="stat-value" id="st-active">۰</strong>
+            <span class="stat-hint" id="st-proxy-conn">۰ اتصال موفق</span>
+          </div>
+          <div class="card stat">
+            <span class="stat-label">ترافیک رله شده</span>
+            <strong class="stat-value" id="st-bytes">۰ B</strong>
+            <span class="stat-hint" id="st-failed">۰ خطا</span>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head">
+              <h3>نمودار کوئری (۹۰ ثانیه)</h3>
+              <span class="tiny muted" id="chart-max"></span>
+            </div>
+            <canvas id="qps-chart" height="150"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>پرتکرارترین دامنه‌ها</h3></div>
+            <div class="table-wrap">
+              <table class="table tiny">
+                <thead><tr><th>دامنه</th><th class="num">کوئری</th><th>وضعیت</th></tr></thead>
+                <tbody id="top-domains"><tr><td colspan="3" class="muted center">داده‌ای نیست</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>وضعیت سرویس</h3></div>
+            <ul class="kv" id="service-status"></ul>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <h3>مسیرهای فعال</h3>
+              <button class="btn ghost tiny" data-goto="routes">مدیریت مسیرها</button>
+            </div>
+            <div id="dash-routes" class="chip-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── routes ────────────────────────────────────────────── -->
+      <section class="view" id="view-routes">
+        <div class="card note-card">
+          <strong>بدون هیچ لیست آماده‌ای.</strong>
+          هر مسیری که اینجا بسازی، دامنه‌هایش از این سرور عبور می‌کنند و بقیهٔ دنیا مثل قبل
+          مستقیم resolve می‌شوند. قالب نوشتن: <code>example.com</code> (خودش + همهٔ ساب‌دامین‌ها)،
+          <code>*.example.com</code> (فقط ساب‌دامین‌ها)، <code>=example.com</code> (فقط همان دامنه).
+        </div>
+        <div class="list-toolbar">
+          <input class="input" id="route-search" placeholder="جست‌وجو در نام مسیر یا دامنه…">
+          <button class="btn primary" id="add-route">+ مسیر جدید</button>
+        </div>
+        <div id="routes-list" class="route-grid"></div>
+      </section>
+
+      <!-- ── clients ───────────────────────────────────────────── -->
+      <section class="view" id="view-clients">
+        <div class="list-toolbar">
+          <input class="input" id="client-search" placeholder="جست‌وجوی کلاینت، IP یا توکن…">
+          <button class="btn primary" id="add-client">+ کلاینت جدید</button>
+        </div>
+        <div id="clients-groups"></div>
+      </section>
+
+      <!-- ── settings ──────────────────────────────────────────── -->
+      <section class="view" id="view-settings">
+        <form id="settings-form" class="card form-card">
+          <div class="card-head"><h3>تنظیمات سرویس</h3></div>
+          <div class="form-grid">
+            <label class="field">
+              <span>آدرس IP عمومی سرور (پاسخ مسیرها)</span>
+              <input class="input" name="proxy_ip" placeholder="خالی = تشخیص خودکار">
+              <em class="hint">دامنه‌های مسیرشده به این IP resolve می‌شوند تا رله SNI کار کند.</em>
+            </label>
+            <label class="field">
+              <span>پورت‌های رله SNI</span>
+              <input class="input" name="proxy_ports" placeholder="443,8443">
+              <em class="hint">با کاما جدا کن. پورت ۴۴۳ پیشنهاد می‌شود.</em>
+            </label>
+            <label class="field">
+              <span>DNS بالادست</span>
+              <input class="input" name="upstreams" placeholder="1.1.1.1:53, 8.8.8.8:53">
+            </label>
+            <label class="field">
+              <span>پورت DNS-over-HTTPS (اختیاری)</span>
+              <input class="input" name="doh_port" placeholder="خالی = غیرفعال، مثال: :8443">
+            </label>
+            <label class="field">
+              <span>TTL پاسخ‌های عادی (ثانیه)</span>
+              <input class="input" type="number" name="cache_ttl" min="0" max="86400">
+            </label>
+            <label class="field">
+              <span>TTL پاسخ‌های مسیرشده (ثانیه)</span>
+              <input class="input" type="number" name="routed_ttl" min="5" max="3600">
+            </label>
+            <label class="field">
+              <span>حد نرخ کوئری هر IP (در ثانیه)</span>
+              <input class="input" type="number" name="rate_limit" min="0" max="10000">
+              <em class="hint">۰ = بدون محدودیت</em>
+            </label>
+            <label class="field">
+              <span>حداکثر اتصال هم‌زمان رله</span>
+              <input class="input" type="number" name="max_conns" min="16" max="20000">
+            </label>
+            <label class="field">
+              <span>مهلت اتصال رله (ثانیه)</span>
+              <input class="input" type="number" name="proxy_timeout" min="2" max="60">
+            </label>
+            <label class="field">
+              <span>عنوان پنل</span>
+              <input class="input" name="panel_title" maxlength="40">
+            </label>
+          </div>
+          <div class="switch-grid">
+            <label class="switch"><input type="checkbox" name="allow_all"><span></span>
+              <div><strong>اجازهٔ سرویس به کلاینت ثبت‌نشده</strong>
+              <em class="hint">خاموش = فقط IPهای ثبت‌شده پاسخ می‌گیرند (پیشنهاد می‌شود).</em></div>
+            </label>
+            <label class="switch"><input type="checkbox" name="fragment"><span></span>
+              <div><strong>تکه‌تکه کردن ClientHello به سمت مقصد</strong>
+              <em class="hint">برای عبور از DPI روی مسیر سرور تا مقصد.</em></div>
+            </label>
+            <label class="switch"><input type="checkbox" name="answer_ipv6"><span></span>
+              <div><strong>پاسخ AAAA برای دامنه‌های مسیرشده</strong>
+              <em class="hint">خاموش = پاسخ خالی تا کلاینت مجبور به IPv4 شود.</em></div>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="btn primary" type="submit">ذخیرهٔ تنظیمات</button>
+            <button class="btn ghost" type="button" id="flush-cache">خالی کردن کش</button>
+          </div>
+        </form>
+
+        <div class="grid-2">
+          <form id="password-form" class="card form-card">
+            <div class="card-head"><h3>تغییر رمز عبور</h3></div>
+            <label class="field">
+              <span>رمز فعلی</span>
+              <input class="input" type="password" name="current" autocomplete="current-password">
+            </label>
+            <label class="field">
+              <span>رمز جدید</span>
+              <input class="input" type="password" name="next" autocomplete="new-password">
+            </label>
+            <div class="form-actions"><button class="btn primary" type="submit">تغییر رمز</button></div>
+          </form>
+
+          <div class="card form-card">
+            <div class="card-head"><h3>پشتیبان‌گیری</h3></div>
+            <p class="tiny muted">کل تنظیمات، مسیرها و کلاینت‌ها در یک فایل JSON. برای انتقال سرور یا بازیابی استفاده کن.</p>
+            <div class="form-actions">
+              <a class="btn ghost" href="/api/backup" download>دانلود نسخهٔ پشتیبان</a>
+              <label class="btn ghost file-btn">بازیابی از فایل<input type="file" id="restore-file" accept="application/json" hidden></label>
+            </div>
+            <p class="hint" id="restore-hint"></p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3 id="modal-title">—</h3>
+      <button class="icon-btn" id="modal-close" aria-label="بستن">✕</button>
+    </div>
+    <form id="modal-form" class="modal-body"><div id="modal-fields"></div>
+      <div class="form-actions">
+        <button class="btn primary" type="submit" id="modal-submit">ذخیره</button>
+        <button class="btn ghost" type="button" id="modal-cancel">انصراف</button>
+      </div>
+      <p class="error" id="modal-error" hidden></p>
+    </form>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

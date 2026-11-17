@@ -1,0 +1,22 @@
+# binaries and build output
+/bin/
+/dist/
+/data/
+*.exe
+*.test
+*.out
+
+# runtime state (never commit: contains subscriber tokens and password hashes)
+state.json
+state-first-login.txt
+*.state.json
+
+# local toolchain used while developing on this machine
+/.tools/
+
+# editors / os
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
