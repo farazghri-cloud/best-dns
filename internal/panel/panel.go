@@ -298,6 +298,16 @@ func decodeJSON(r *http.Request, v any) error {
 }
 
 func clientIP(r *http.Request) string {
+	remote := r.RemoteAddr
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		remote = host
+	}
+	// Forwarding headers are only meaningful when the request came from a
+	// local reverse proxy; accepting them straight from the internet would let
+	// a caller claim any address it likes on /ip/{token}.
+	if !isProxy(remote) {
+		return remote
+	}
 	if v := r.Header.Get("CF-Connecting-IP"); v != "" {
 		return strings.TrimSpace(v)
 	}
@@ -310,10 +320,17 @@ func clientIP(r *http.Request) string {
 		}
 		return strings.TrimSpace(v)
 	}
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
+	return remote
+}
+
+// isProxy reports whether addr is a loopback or private hop, i.e. something we
+// are willing to take X-Forwarded-For from.
+func isProxy(addr string) bool {
+	ip := net.ParseIP(addr)
+	if ip == nil {
+		return false
 	}
-	return r.RemoteAddr
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast()
 }
 
 func isHTTPS(r *http.Request) bool {

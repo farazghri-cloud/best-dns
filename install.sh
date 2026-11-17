@@ -28,6 +28,9 @@ UNIT="/etc/systemd/system/bestdns.service"
 SERVICE="bestdns"
 
 C_OK=$'\033[1;32m'; C_WARN=$'\033[1;33m'; C_ERR=$'\033[1;31m'; C_DIM=$'\033[2m'; C_END=$'\033[0m'
+FRESH=0
+[ -f "$STATE_FILE" ] || FRESH=1
+
 step()  { printf '%s▸ %s%s\n' "$C_OK" "$*" "$C_END"; }
 info()  { printf '%s  %s%s\n' "$C_DIM" "$*" "$C_END"; }
 warn()  { printf '%s! %s%s\n' "$C_WARN" "$*" "$C_END"; }
@@ -42,6 +45,7 @@ while [ $# -gt 0 ]; do
     --allow-all)  BESTDNS_ALLOW_ALL=1; shift ;;
     --ip)         BESTDNS_IP="${2:?}"; shift 2 ;;
     --no-firewall) BESTDNS_NO_FIREWALL=1; shift ;;
+    --proxy-ports) PROXY_PORTS="${2:?}"; shift 2 ;;
     -h|--help)    sed -n '2,20p' "$0" 2>/dev/null || true; exit 0 ;;
     *)            die "unknown option: $1" ;;
   esac
@@ -200,10 +204,10 @@ fi
 
 SERVER_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 [ -n "$SERVER_IP" ] || SERVER_IP="<server-ip>"
-PASSWORD=""
-[ -f "$STATE_DIR/state-first-login.txt" ] && \
+PASSWORD="(رمز قبلی حفظ شده — برای تعویض: bestdns passwd)"
+if [ "$FRESH" = "1" ] && [ -f "$STATE_DIR/state-first-login.txt" ]; then
   PASSWORD="$(grep -o 'password: .*' "$STATE_DIR/state-first-login.txt" | cut -d' ' -f2)"
-[ -n "$PASSWORD" ] || PASSWORD="(already set — use: bestdns passwd)"
+fi
 
 cat <<SUMMARY
 

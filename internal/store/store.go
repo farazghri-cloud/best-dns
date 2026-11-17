@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"sort"
@@ -446,9 +447,7 @@ func (s *Store) CreateClient(c Client) (Client, error) {
 	if c.CreatedAt.IsZero() {
 		c.CreatedAt = time.Now()
 	}
-	if c.IPs == nil {
-		c.IPs = []string{}
-	}
+	c.IPs = sanitizeIPs(c.IPs)
 	if c.RouteIDs == nil {
 		c.RouteIDs = []string{}
 	}
@@ -477,9 +476,7 @@ func (s *Store) UpdateClient(id string, upd Client) (Client, error) {
 		c.ExpiresAt = upd.ExpiresAt
 		c.QuotaBytes = upd.QuotaBytes
 		c.Note = upd.Note
-		if ups := uniqueStrings(upd.IPs); len(ups) > 0 || len(upd.IPs) == 0 {
-			c.IPs = ups
-		}
+		c.IPs = sanitizeIPs(upd.IPs)
 		if upd.Token != "" && upd.Token != c.Token {
 			c.Token = upd.Token
 		}
@@ -789,6 +786,26 @@ func removeString(in []string, v string) []string {
 		if s != v {
 			out = append(out, s)
 		}
+	}
+	return out
+}
+
+// sanitizeIPs keeps only syntactically valid addresses, normalised so that
+// "::ffff:1.2.3.4" and "1.2.3.4" compare equal.
+func sanitizeIPs(in []string) []string {
+	out := make([]string, 0, len(in))
+	seen := make(map[string]bool, len(in))
+	for _, raw := range in {
+		ip := net.ParseIP(strings.TrimSpace(raw))
+		if ip == nil {
+			continue
+		}
+		s := ip.String()
+		if seen[s] {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
 	}
 	return out
 }

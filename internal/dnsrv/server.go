@@ -645,6 +645,11 @@ func isLocal(ip string) bool {
 }
 
 func clientIPFromRequest(r *http.Request) string {
+	remote := hostOnly(r.RemoteAddr)
+	if ip := net.ParseIP(remote); ip == nil || !(ip.IsLoopback() || ip.IsPrivate()) {
+		// only trust forwarding headers from a local reverse proxy
+		return remote
+	}
 	if v := r.Header.Get("CF-Connecting-IP"); v != "" {
 		return v
 	}
