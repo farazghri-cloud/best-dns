@@ -18,7 +18,7 @@
 set -euo pipefail
 
 REPO="${BESTDNS_REPO:-farazghri-cloud/best-dns}"
-VERSION="${BESTDNS_VERSION:-latest}"
+REQ_VERSION="${BESTDNS_VERSION:-latest}"
 PANEL_ADDR="${BESTDNS_PANEL_ADDR:-:${BESTDNS_PANEL_PORT:-8080}}"
 DNS_ADDR="${BESTDNS_DNS_ADDR:-:53}"
 PROXY_PORTS="${BESTDNS_PROXY_PORTS:-443}"
@@ -42,7 +42,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --panel-port) PANEL_ADDR=":${2:?}"; shift 2 ;;
     --panel-addr) PANEL_ADDR="${2:?}"; shift 2 ;;
-    --version)    VERSION="${2:?}"; shift 2 ;;
+    --version)    REQ_VERSION="${2:?}"; shift 2 ;;
     --allow-all)  BESTDNS_ALLOW_ALL=1; shift ;;
     --ip)         BESTDNS_IP="${2:?}"; shift 2 ;;
     --no-firewall) BESTDNS_NO_FIREWALL=1; shift ;;
@@ -54,10 +54,10 @@ done
 
 [ "$(id -u)" -eq 0 ] || die "run as root:  curl -fsSL …/install.sh | sudo bash"
 
-if [ -r /etc/os-release ]; then
-  . /etc/os-release
-  info "system: ${PRETTY_NAME:-unknown}"
-fi
+# Read the OS name in a subshell: /etc/os-release defines VERSION (Ubuntu ships
+# "24.04.4 LTS (Noble Numbat)"), which must never leak into our release tag.
+OS_PRETTY="$( . /etc/os-release 2>/dev/null && printf '%s' "${PRETTY_NAME:-${NAME:-unknown}}" )"
+[ -n "$OS_PRETTY" ] && info "system: $OS_PRETTY"
 
 case "$(uname -m)" in
   x86_64|amd64)  ARCH="amd64" ;;
@@ -80,14 +80,17 @@ if [ "${BESTDNS_LOCAL:-0}" = "1" ] && [ -x ./bin/bestdns ]; then
   step "using local binary ./bin/bestdns"
   cp ./bin/bestdns "$TMP/bestdns"
 else
-  if [ "$VERSION" = "latest" ]; then
+  if [ "$REQ_VERSION" = "latest" ]; then
     step "resolving the latest release of $REPO"
     RELEASE_JSON="$(curl -fsSL --retry 3 --max-time 30 "https://api.github.com/repos/$REPO/releases/latest" || true)"
     TAG="$(printf '%s' "$RELEASE_JSON" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)"$/\1/')"
-    [ -n "$TAG" ] || die "could not reach the GitHub API; set BESTDNS_VERSION=v1.0.0 and retry"
+    [ -n "$TAG" ] || die "could not reach the GitHub API; set BESTDNS_VERSION=v1.0.3 and retry"
   else
-    TAG="$VERSION"
+    TAG="$REQ_VERSION"
   fi
+  case "$TAG" in
+    ""|*[!A-Za-z0-9._-]*) die "invalid release tag '$TAG' — expected something like v1.0.3" ;;
+  esac
   info "release: $TAG"
 
   URL="https://github.com/$REPO/releases/download/$TAG/best-dns-linux-$ARCH.tar.gz"
