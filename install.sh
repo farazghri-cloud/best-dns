@@ -2,12 +2,13 @@
 # ─────────────────────────────────────────────────────────────────────────────
 #  BESTPRIME DNS — one-line installer for Ubuntu 22.04 / 24.04 (and Debian 12)
 #
-#    curl -fsSL https://raw.githubusercontent.com/farazghri-cloud/best-dns/main/install.sh | sudo bash
+#    curl -fsSL https://cdn.jsdelivr.net/gh/farazghri-cloud/best-dns@v1.0.1/install.sh | sudo bash
 #
 #  Options (environment variables, or flags after `bash -s --`):
 #    BESTDNS_PANEL_PORT=8080     panel listen port          (default 8080)
 #    BESTDNS_PANEL_ADDR=:8080    full panel listen address  (overrides port)
-#    BESTDNS_VERSION=v1.0.0      release tag                (default: latest)
+#    BESTDNS_PROXY_PORTS=443     relay ports, comma-joined (default 443)
+#    BESTDNS_VERSION=v1.0.1      release tag                (default: latest)
 #    BESTDNS_REPO=owner/repo     source repository
 #    BESTDNS_ALLOW_ALL=1         serve unregistered clients (open resolver)
 #    BESTDNS_IP=1.2.3.4          advertised proxy address  (default: auto)
