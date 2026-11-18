@@ -21,10 +21,10 @@
 ## نصب با یک دستور (Ubuntu 22.04/24.04، Debian 12)
 
 ```bash
-curl -fsSL https://cdn.jsdelivr.net/gh/farazghri-cloud/best-dns@v1.0.1/install.sh | sudo bash
+curl -fsSL https://cdn.jsdelivr.net/gh/farazghri-cloud/best-dns@v1.0.2/install.sh | sudo bash
 ```
 
-> چرا jsDelivr؟ چون در ایران `raw.githubusercontent.com` معمولاً فیلتر است و jsDelivr از CDNهای در دسترس می‌خواند. تگ نسخه (`@v1.0.1`) نسخهٔ تأییدشده را قفل می‌کند تا آپدیت‌های بعدی نصب شما را وسط کار عوض نکنند. دو مسیر جایگزین:
+> چرا jsDelivr؟ چون در ایران `raw.githubusercontent.com` معمولاً فیلتر است و jsDelivr از CDNهای در دسترس می‌خواند. تگ نسخه (`@v1.0.2`) نسخهٔ تأییدشده را قفل می‌کند تا آپدیت‌های بعدی نصب شما را وسط کار عوض نکنند. دو مسیر جایگزین:
 >
 > ```bash
 > # مسیر دوم: API گیت‌هاب
