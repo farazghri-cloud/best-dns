@@ -44,7 +44,10 @@ jobs:
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           VERSION="${TAG#v}"
-          NAME="best-dns-${GOOS}-${GOARCH}"
+          # install.sh asks for armv7 by name, so map GOARCH=arm -> armv7
+          ARCHNAME="$GOARCH"
+          if [ "$GOARCH" = "arm" ]; then ARCHNAME="armv7"; fi
+          NAME="best-dns-${GOOS}-${ARCHNAME}"
           mkdir -p dist
           go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
             -o "dist/bestdns${{ matrix.ext }}" ./cmd/bestdns
@@ -53,8 +56,8 @@ jobs:
             ( cd dist && sha256sum "${NAME}.tar.gz" > "${NAME}.tar.gz.sha256" )
             rm -f "dist/bestdns${{ matrix.ext }}"
           else
-            ( cd dist && sha256sum "bestdns${{ matrix.ext }}" > "bestdns${GOOS}-${GOARCH}.exe.sha256" )
             mv "dist/bestdns${{ matrix.ext }}" "dist/${NAME}.exe"
+            ( cd dist && sha256sum "${NAME}.exe" > "${NAME}.exe.sha256" )
           fi
 
       - uses: actions/upload-artifact@v4
@@ -74,6 +77,7 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: dist/*
+          fail_on_unmatched_files: false
           generate_release_notes: true
           body: |
             Prebuilt single binaries (no runtime dependencies).
