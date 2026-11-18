@@ -65,15 +65,26 @@ func (p *Panel) Handler() http.Handler { return p.mux }
 
 // ListenAndServe binds the panel.
 func (p *Panel) ListenAndServe(addr string) error {
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	return p.Serve(ln)
+}
+
+// Serve runs the panel on a listener the caller already bound. Binding first
+// lets main report "port busy" as a clear, fatal error instead of a daemon that
+// stays up while something else answers on the panel port.
+func (p *Panel) Serve(ln net.Listener) error {
 	p.server = &http.Server{
-		Addr:              addr,
+		Addr:              ln.Addr().String(),
 		Handler:           p.mux,
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       90 * time.Second,
 		MaxHeaderBytes:    1 << 16,
 	}
-	p.log.Info("panel listening", "addr", addr)
-	return p.server.ListenAndServe()
+	p.log.Info("panel listening", "addr", ln.Addr().String())
+	return p.server.Serve(ln)
 }
 
 // Close shuts the panel down.

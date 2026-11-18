@@ -2,13 +2,13 @@
 # ─────────────────────────────────────────────────────────────────────────────
 #  BESTPRIME DNS — one-line installer for Ubuntu 22.04 / 24.04 (and Debian 12)
 #
-#    curl -fsSL https://cdn.jsdelivr.net/gh/farazghri-cloud/best-dns@v1.0.3/install.sh | sudo bash
+#    curl -fsSL https://cdn.jsdelivr.net/gh/farazghri-cloud/best-dns@v1.0.4/install.sh | sudo bash
 #
 #  Options (environment variables, or flags after `bash -s --`):
 #    BESTDNS_PANEL_PORT=8080     panel listen port          (default 8080)
 #    BESTDNS_PANEL_ADDR=:8080    full panel listen address  (overrides port)
 #    BESTDNS_PROXY_PORTS=443     relay ports, comma-joined (default 443)
-#    BESTDNS_VERSION=v1.0.3      release tag                (default: latest)
+#    BESTDNS_VERSION=v1.0.4      release tag                (default: latest)
 #    BESTDNS_REPO=owner/repo     source repository
 #    BESTDNS_ALLOW_ALL=1         serve unregistered clients (open resolver)
 #    BESTDNS_IP=1.2.3.4          advertised proxy address  (default: auto)
@@ -71,6 +71,27 @@ need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1 (apt-get
 need curl curl
 need tar tar
 need systemctl systemd
+
+# ── port sanity ──────────────────────────────────────────────────────────────
+# A VPS usually already runs something on 8080 (x-ui, a proxy panel, …).
+# Colliding there used to leave the daemon up but the panel unreachable.
+port_busy() {
+  command -v ss >/dev/null 2>&1 || return 1
+  ss -ltn 2>/dev/null | awk 'NR>1 {print $4}' | sed 's/.*://' | grep -qx "$1"
+}
+if [ -z "${BESTDNS_PANEL_ADDR:-}" ] && port_busy "${PANEL_ADDR##*:}"; then
+  want="${PANEL_ADDR##*:}"
+  for cand in 8090 8091 8092 9090 9091 7800 7801; do
+    if ! port_busy "$cand"; then PANEL_ADDR=":$cand"; break; fi
+  done
+  [ "$PANEL_ADDR" = ":$want" ] || warn "port $want is busy — the panel will listen on ${PANEL_ADDR#*:}"
+fi
+if port_busy 53; then
+  warn "something is already listening on 53/tcp — DNS may fail to bind (systemd-resolved? dnsmasq?)"
+fi
+for p in ${PROXY_PORTS//,/ }; do
+  port_busy "$p" && warn "port $p is busy — the SNI relay will not start on it (use --proxy-ports)"
+done
 
 # ── 1. fetch the release ─────────────────────────────────────────────────────
 TMP="$(mktemp -d)"

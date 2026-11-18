@@ -171,9 +171,25 @@ func runServer(args []string) {
 		os.Exit(1)
 	}
 
+	// Bind the panel before anything else claims the port, so a busy port is a
+	// loud, actionable failure instead of a daemon that looks "running" while
+	// something else answers on 8080.
+	panelLn, err := net.Listen("tcp", *panelAddr)
+	if err != nil {
+		log.Error("cannot open the panel listener", "addr", *panelAddr)
+		fmt.Fprintf(os.Stderr,
+			"\n  Port %s is not usable (%v).\n"+
+				"  Something else is probably already listening there.\n"+
+				"  Start on a free port instead, e.g.:\n\n"+
+				"      bestdns server -panel :8090\n\n"+
+				"  or reinstall with:  install.sh --panel-port 8090\n\n",
+			*panelAddr, err)
+		os.Exit(1)
+	}
+
 	errCh := make(chan error, 1)
 	go func() {
-		if err := panelSrv.ListenAndServe(*panelAddr); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		if err := panelSrv.Serve(panelLn); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 		}
 	}()
